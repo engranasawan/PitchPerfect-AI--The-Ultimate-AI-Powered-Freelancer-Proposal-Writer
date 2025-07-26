@@ -5,7 +5,8 @@ import docx
 import os
 
 # === Hugging Face API Setup ===
-API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
+API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf"
+
 
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}", "Content-Type": "application/json"}
 
