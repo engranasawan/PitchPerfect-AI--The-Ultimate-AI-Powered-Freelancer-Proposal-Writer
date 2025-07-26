@@ -3,7 +3,7 @@ import requests
 import fitz  # PyMuPDF
 import docx
 import os
-import textwrap
+import re
 
 # === Hugging Face API Setup ===
 API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
@@ -12,164 +12,115 @@ headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}", "Content-Type": 
 def query_hf_model(prompt):
     payload = {
         "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 1200,
-            "temperature": 0.65,
-            "top_p": 0.9,
-            "repetition_penalty": 1.1
-        }
+        "parameters": {"max_new_tokens": 500, "temperature": 0.7, "top_p": 0.9}
     }
-    
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=45)
+        response = requests.post(API_URL, headers=headers, json=payload)
         response.raise_for_status()
         result = response.json()
-        
-        if isinstance(result, list) and result:
-            return result[0].get("generated_text", "")
-        elif isinstance(result, dict) and "generated_text" in result:
-            return result["generated_text"]
-        else:
-            st.error(f"Unexpected response format: {result}")
+        if isinstance(result, list) and result[0].get("generated_text"):
+            return result[0]["generated_text"].strip()
+        elif isinstance(result, dict) and "error" in result:
+            st.error(f"❌ Hugging Face Error: {result['error']}")
             return ""
-    except requests.exceptions.RequestException as e:
-        st.error(f"API Request Failed: {str(e)}")
         return ""
-    except ValueError:
-        st.error("Invalid JSON response from API")
+    except Exception as e:
+        st.error(f"❌ API Error: {e}")
+        st.code(response.text, language="text")
         return ""
 
 def extract_text_from_file(uploaded_file):
-    ext = uploaded_file.name.split(".")[-1].lower()
     try:
+        ext = uploaded_file.name.split(".")[-1].lower()
         if ext == "pdf":
             with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
                 return "\n".join([page.get_text() for page in doc])
         elif ext == "docx":
             doc = docx.Document(uploaded_file)
-            return "\n".join([p.text for p in doc.paragraphs])
+            return "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
         elif ext == "txt":
             return uploaded_file.read().decode("utf-8")
         return ""
     except Exception as e:
-        st.error(f"File processing error: {str(e)}")
+        st.error(f"❌ File Processing Error: {e}")
         return ""
 
-# === Proposal Template Formatter ===
-def format_proposal(proposal_text):
-    formatted = ""
-    for line in proposal_text.split('\n'):
-        if line.startswith('**') and line.endswith('**'):
-            formatted += f"\n{line}\n"
-        elif line.strip() == '':
-            formatted += '\n'
-        else:
-            formatted += textwrap.fill(line, width=80) + '\n\n'
-    return formatted
+def match_skills(job_desc, freelancer_skills):
+    job_keywords = re.findall(r'\b\w+\b', job_desc.lower())
+    freelancer_skills_list = [skill.strip().lower() for skill in freelancer_skills.split(",")]
+    matched_skills = [skill for skill in freelancer_skills_list if skill in job_keywords]
+    return matched_skills if matched_skills else freelancer_skills_list
 
 # === Streamlit UI ===
-st.set_page_config(
-    page_title="🚀 PitchPerfect AI - Ultimate Proposal Writer",
-    layout="centered",
-    page_icon="💼"
-)
-
-st.title("🚀 PitchPerfect AI - Ultimate Proposal Writer")
-st.markdown("### Generate Winning Freelance Proposals in Seconds")
+st.set_page_config(page_title="Freelancer Proposal Writer", layout="wide")
+st.title("📝 PitchPerfect AI — Ultimate Proposal Writer for Freelancers")
+st.markdown("Generate compelling, tailored freelance proposals to win your dream projects!")
 
 # --- Job Description Input ---
-with st.expander("📄 Job Details", expanded=True):
-    uploaded_file = st.file_uploader("Upload job description (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
-    job_desc = extract_text_from_file(uploaded_file) if uploaded_file else ""
-    job_desc = st.text_area("Or paste job description here", value=job_desc, height=200, placeholder="Paste full job description here...")
+st.subheader("📄 Job Description")
+uploaded_file = st.file_uploader("Upload a job description file (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
+job_desc = extract_text_from_file(uploaded_file) if uploaded_file else ""
+job_desc = st.text_area("Or paste the job description here", value=job_desc, height=250, placeholder="Paste the full job description...")
 
 # --- Freelancer Info ---
-with st.expander("👤 Your Profile", expanded=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        name = st.text_input("Your Name", "Jane Doe")
-        title = st.text_input("Professional Title", "AI/ML Engineer")
-    with col2:
-        tone = st.selectbox("Tone", ["Professional", "Confident", "Friendly", "Expert"])
-        urgency = st.selectbox("Project Urgency", ["Standard", "Urgent", "ASAP"])
-    
-    skills = st.text_input("Key Skills (comma separated)", "Python, Deep Learning, TensorFlow, Fraud Detection")
-    experience = st.text_area("Experience Summary", "3+ years building fraud detection systems for e-commerce platforms", height=80)
-    
-    # Achievement repository
-    achievements = st.text_area("Key Achievements (optional)", 
-                              "Reduced fake seller incidents by 87% for XYZ Platform, Developed real-time fraud detection for ABC Marketplace",
-                              height=80,
-                              help="Mention quantifiable results from past projects")
+st.subheader("👤 Your Profile")
+col1, col2 = st.columns(2)
+with col1:
+    name = st.text_input("Your Name", "Jane Doe")
+    title = st.text_input("Professional Title", "AI/ML Engineer")
+with col2:
+    skills = st.text_area("Key Skills (comma-separated)", "Python, Deep Learning, NLP, Streamlit, TensorFlow, PyTorch")
+    experience = st.text_area("Brief Experience Summary", "I have 3+ years of experience delivering production-ready AI systems.")
+
+tone = st.selectbox("🎯 Tone of Proposal", ["Professional", "Confident", "Friendly", "Creative"], help="Choose the tone that best matches your style and the client's expectations.")
 
 # --- Generate Button ---
-generate_btn = st.button("✨ Generate Proposal", type="primary", use_container_width=True)
-
-if generate_btn:
+if st.button("🚀 Generate Proposal", type="primary"):
     if not job_desc.strip():
-        st.warning("Please provide a job description")
+        st.warning("Please provide a job description.")
+    elif not name.strip() or not title.strip() or not skills.strip() or not experience.strip():
+        st.warning("Please complete all profile fields.")
     else:
-        with st.spinner("Crafting your winning proposal..."):
-            # Enhanced prompt with strategic guidance
-            prompt = f"""
-You are a world-class freelance proposal writer with 10+ years of experience. 
-Create an exceptional proposal for this job that will stand out from competitors. 
-Use {tone.lower()} tone and address the client's pain points directly.
+        with st.spinner("Crafting your perfect proposal..."):
+            # Match skills to job description
+            matched_skills = match_skills(job_desc, skills)
+            skills_str = ", ".join(matched_skills).title()
 
-**Job Description:**
+            # Define tone-specific instructions
+            tone_instructions = {
+                "Professional": "Use a formal, polished tone with precise language. Focus on expertise and reliability.",
+                "Confident": "Emphasize confidence and proven success with bold, assertive language.",
+                "Friendly": "Adopt a warm, approachable tone while maintaining professionalism.",
+                "Creative": "Use engaging, imaginative language to stand out while addressing client needs."
+            }
+
+            prompt = f"""
+You are an expert freelance proposal writer tasked with creating a highly persuasive, tailored proposal for a freelance job. Write a proposal in a {tone.lower()} tone that addresses the client's needs, showcases the freelancer's expertise, and positions them as the ideal candidate. Follow this structure:
+
+1. **Introduction**: Greet the client, express enthusiasm for the project, and briefly summarize the project goal.
+2. **Proposed Solution**: Outline a clear, step-by-step approach to meet the client's requirements, incorporating relevant skills and technologies.
+3. **Qualifications**: Highlight the freelancer's relevant experience, skills, and achievements, emphasizing alignment with the job description.
+4. **Timeline and Deliverables**: Provide a realistic timeline and key deliverables.
+5. **Closing and Call-to-Action**: Reiterate enthusiasm, invite further discussion, and provide contact details.
+
+Ensure the proposal is concise (300-400 words), professional, and tailored to the job description. Avoid generic phrases and focus on specific, actionable insights.
+
+**Job Description**:
 {job_desc}
 
-**Freelancer Profile:**
+**Freelancer Profile**:
 - Name: {name}
 - Title: {title}
-- Core Skills: {skills}
+- Skills: {skills_str}
 - Experience: {experience}
-- Key Achievements: {achievements}
-- Project Urgency: {urgency}
 
-**Create proposal with this structure:**
-1. **Catchy Subject Line** (15 words max)
-2. **Opening Hook** - Show deep understanding of their problem
-3. **Proposed Solution** - Specific approach with technical details
-4. **Why Choose Me** - Match each requirement to your skills/achievements
-5. **Project Timeline** - Phased delivery plan
-6. **Call to Action** - Clear next steps
-
-**Critical Requirements:**
-- Start with "Subject: [Your Subject Line]"
-- Address ALL client requirements from job description
-- Include 3 SPECIFIC technical details about implementation
-- Mention {achievements if achievements else 'relevant experience'} with results
-- Add urgency indicator: "I can start [immediately/within 24 hours]"
-- End with powerful CTA: "Let's schedule a call to discuss implementation details"
-- Keep under 500 words
+**Tone Instructions**: {tone_instructions[tone]}
 """
             proposal = query_hf_model(prompt)
-            formatted_proposal = format_proposal(proposal) if proposal else ""
 
-        if formatted_proposal:
-            st.success("✅ Proposal Generated - Customize as needed")
-            
-            # Enhanced display with tabs
-            tab1, tab2 = st.tabs(["Proposal Preview", "Prompt Details"])
-            with tab1:
-                st.subheader("📝 Your Proposal")
-                st.text_area("Proposal", formatted_proposal, height=400, label_visibility="collapsed")
-                st.download_button("💾 Download Proposal", formatted_proposal, file_name="winning_proposal.txt")
-            
-            with tab2:
-                st.subheader("🧠 Generation Prompt")
-                st.code(prompt, language="text")
+        if proposal:
+            st.subheader("📬 Your Proposal")
+            st.markdown(proposal)
+            st.download_button("📥 Download Proposal", proposal, file_name="freelance_proposal.md", mime="text/markdown")
         else:
             st.error("Failed to generate proposal. Please try again.")
-
-# Add tips section
-st.markdown("---")
-st.markdown("### 💡 Tips for Winning Proposals")
-st.markdown("""
-1. **Quantify achievements** - Use numbers to demonstrate impact  
-2. **Address pain points** - Show you understand their specific challenges  
-3. **Include technical specifics** - Demonstrate expertise through implementation details  
-4. **Add urgency** - Mention immediate availability  
-5. **Personalize** - Reference specific requirements from their job description  
-""")
