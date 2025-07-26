@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import fitz  # PyMuPDF for PDF
 import docx  # for DOCX
+import os
 
 # === Hugging Face API Setup ===
 API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
