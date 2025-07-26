@@ -8,17 +8,25 @@ API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Inst
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"}
 
 def query_hf_model(prompt):
+    headers = {
+        "Authorization": f"Bearer {os.getenv('HF_TOKEN')}"
+    }
+    data = {
+        "inputs": prompt,
+        "parameters": {"temperature": 0.7, "max_new_tokens": 512}
+    }
+    response = requests.post(
+        "https://api-inference.huggingface.co/models/google/flan-t5-base",  # example smaller model
+        headers=headers,
+        json=data
+    )
+
     try:
-        response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-        result = response.json()
-        if isinstance(result, list) and 'generated_text' in result[0]:
-            return result[0]['generated_text']
-        elif isinstance(result, dict) and "error" in result:
-            return f"⚠️ Error from model: {result['error']}"
-        else:
-            return "⚠️ Unexpected response format."
+        return response.json()
     except Exception as e:
-        return f"❌ Request failed: {str(e)}"
+        print("❌ Raw response:", response.text)
+        raise e
+
 
 def extract_text_from_file(uploaded_file):
     ext = uploaded_file.name.split(".")[-1].lower()
