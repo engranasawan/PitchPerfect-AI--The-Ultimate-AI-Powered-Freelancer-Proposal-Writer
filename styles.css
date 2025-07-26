@@ -1,69 +1,48 @@
-/* Main background */
+/* Dark Theme Base */
 .stApp {
-    background-color: #F5FFFA;
+    background-color: #121212 !important;
+    color: #ffffff !important;
 }
 
-/* Headers */
-h1, h2, h3 {
-    color: #2E8B57 !important;
+/* Text Colors */
+h1, h2, h3, h4, h5, h6, p, div, span {
+    color: #ffffff !important;
 }
 
-/* Input fields */
+/* Input Fields */
 .stTextInput>div>div>input, 
 .stTextArea>div>div>textarea {
-    background-color: #FFFFFF !important;
-    border: 1px solid #D1E7DD !important;
-    border-radius: 8px !important;
+    background-color: #1e1e1e !important;
+    color: #ffffff !important;
+    border: 1px solid #333 !important;
 }
 
-/* Select boxes */
+/* Select Boxes */
 .stSelectbox>div>div>select {
-    background-color: #FFFFFF !important;
-    border: 1px solid #D1E7DD !important;
+    background-color: #1e1e1e !important;
+    color: #ffffff !important;
 }
 
 /* Buttons */
 .stButton>button {
-    background-color: #5F9EA0 !important;
+    background-color: #3a5a78 !important;
     color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 10px 24px !important;
-    transition: all 0.3s !important;
-}
-
-.stButton>button:hover {
-    background-color: #2E8B57 !important;
-    transform: scale(1.02) !important;
 }
 
 /* Expanders */
 .stExpander {
-    background-color: #FFFFFF !important;
-    border: 1px solid #D1E7DD !important;
-    border-radius: 8px !important;
-    margin-bottom: 15px !important;
+    background-color: #1e1e1e !important;
+    border: 1px solid #333 !important;
 }
 
-/* Proposal container */
+/* Proposal Container */
 .proposal-container {
-    background-color: #FFFFFF;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #D1E7DD;
-    margin-top: 20px;
+    background-color: #1e1e1e;
+    border: 1px solid #333;
 }
 
-/* Tips container */
+/* Tips Container */
 .tips-container {
-    background-color: #F0FFF0;
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 4px solid #5F9EA0;
-}
-
-/* Generate button container */
-.generate-container {
-    margin: 30px 0;
-    text-align: center;
+    background-color: #1a3a4e;
+    border-left: 4px solid #3a5a78;
 }
