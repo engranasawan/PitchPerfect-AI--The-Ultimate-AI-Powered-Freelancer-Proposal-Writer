@@ -1,71 +1,83 @@
 import streamlit as st
-from llama_cpp import Llama
-import os
-import fitz  # PyMuPDF for PDF reading
-import docx  # python-docx for DOCX reading
+import requests
+import fitz  # PyMuPDF for PDF
+import docx  # for DOCX
 
-MODEL_PATH = "models/phi-1.5.Q4_K_M.gguf"
+# === Hugging Face API Setup ===
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
+headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"}
 
-# -----------------------
-# Load Model
-@st.cache_resource
-def load_model():
-    if not os.path.exists(MODEL_PATH):
-        st.error(f"Model not found at {MODEL_PATH}. Please download it manually.")
-        return None
-    return Llama(model_path=MODEL_PATH, n_ctx=2048)
+def query_hf_model(prompt):
+    try:
+        response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
+        result = response.json()
+        if isinstance(result, list) and 'generated_text' in result[0]:
+            return result[0]['generated_text']
+        elif isinstance(result, dict) and "error" in result:
+            return f"⚠️ Error from model: {result['error']}"
+        else:
+            return "⚠️ Unexpected response format."
+    except Exception as e:
+        return f"❌ Request failed: {str(e)}"
 
-llm = load_model()
-
-# -----------------------
-# Streamlit UI
-st.set_page_config(page_title="Freelancer Proposal Writer", layout="centered")
-st.title("📝PitchPerfect AI- The Ultimate AI Powered Freelancer Proposal Writer")
-
-# Job description input
-st.subheader("📄 Job Description")
-uploaded_file = st.file_uploader("Upload Job Description (.pdf, .docx, .txt)", type=["pdf", "docx", "txt"])
-job_desc = ""
-
-if uploaded_file:
+def extract_text_from_file(uploaded_file):
     ext = uploaded_file.name.split(".")[-1].lower()
     if ext == "pdf":
         with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-            job_desc = "\n".join([page.get_text() for page in doc])
+            return "\n".join([page.get_text() for page in doc])
     elif ext == "docx":
         doc = docx.Document(uploaded_file)
-        job_desc = "\n".join([p.text for p in doc.paragraphs])
+        return "\n".join([p.text for p in doc.paragraphs])
     elif ext == "txt":
-        job_desc = uploaded_file.read().decode("utf-8")
-else:
-    job_desc = st.text_area("Or Paste Job Description Below", height=200)
+        return uploaded_file.read().decode("utf-8")
+    return ""
 
-# Freelancer profile input
-st.subheader("👤 Your Info")
+# === Streamlit UI ===
+st.set_page_config(page_title="Freelancer Proposal Writer", layout="centered")
+st.title("📝 PitchPerfect AI-The Ultimate AI Powered Proposal Writer for Freelancers")
+
+# --- Job Description Input ---
+st.subheader("📄 Job Description")
+uploaded_file = st.file_uploader("Upload a job description file (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
+job_desc = ""
+
+if uploaded_file:
+    job_desc = extract_text_from_file(uploaded_file)
+
+job_desc = st.text_area("Or paste the job description here", value=job_desc, height=200, help="This will be used to tailor your proposal.")
+
+# --- Freelancer Info ---
+st.subheader("👤 Your Profile")
 name = st.text_input("Your Name", "Jane Doe")
-title = st.text_input("Your Title", "AI Freelancer")
-skills = st.text_area("Skills (comma-separated)", "Python, Deep Learning, Streamlit, LLMs")
-experience = st.text_area("Brief Experience Summary", "I have over 3 years of experience building AI-powered applications.")
+title = st.text_input("Professional Title", "AI/ML Engineer")
+skills = st.text_area("Key Skills (comma-separated)", "Python, Deep Learning, NLP, Streamlit")
+experience = st.text_area("Brief Experience Summary", "I have 3+ years of experience delivering production-ready AI systems.")
 
-tone = st.selectbox("🗣️ Tone of Voice", ["Professional", "Friendly", "Confident", "Creative"])
+tone = st.selectbox("🎯 Tone of Proposal", ["Professional", "Friendly", "Confident", "Creative"])
 
-# Generate button
-if st.button("🚀 Generate Proposal") and llm:
-    with st.spinner("Generating your proposal..."):
-        prompt = f"""
-Write a freelance proposal with the following information:
-Job Description: {job_desc}
+# --- Generate Button ---
+if st.button("🚀 Generate Proposal"):
+    if not job_desc.strip():
+        st.warning("Please provide a job description.")
+    else:
+        with st.spinner("Generating proposal..."):
+            prompt = f"""
+Write a freelance proposal for the following job post:
+
+Job Description:
+{job_desc}
+
+Freelancer Details:
 Name: {name}
 Title: {title}
 Skills: {skills}
 Experience: {experience}
 Tone: {tone}
-Make it concise, personalized, and persuasive.
+
+Make it persuasive, clear, and aligned with the tone.
 """
-        output = llm(prompt, max_tokens=512, stop=["</s>"])
-        proposal = output["choices"][0]["text"].strip()
+            proposal = query_hf_model(prompt)
 
-    st.subheader("📬 Generated Proposal")
-    st.text_area("Your Proposal", proposal, height=300)
-
-    st.download_button("📥 Download Proposal", proposal, file_name="proposal.txt")
+        st.subheader("📬 Your Proposal")
+        st.text_area("Proposal", proposal, height=300)
+        st.download_button("📥 Download Proposal", proposal, file_name="freelance_proposal.txt")

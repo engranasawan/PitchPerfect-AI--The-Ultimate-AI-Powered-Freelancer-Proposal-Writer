@@ -1,4 +1,4 @@
 streamlit
-llama-cpp-python
-python-docx
+requests
 PyMuPDF
+python-docx
