@@ -52,15 +52,9 @@ def load_css():
         border-radius: 12px !important;
         padding: 12px 24px !important;
         font-weight: 600 !important;
-        transition: all 0.3s !important;
     }}
     
-    .stButton>button:hover {{
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3) !important;
-    }}
-    
-    /* Input fields - Fixed dark mode styling */
+    /* Input fields */
     .stTextInput>div>div>input, 
     .stTextArea>div>div>textarea {{
         background-color: {CARD_BG} !important;
@@ -68,13 +62,6 @@ def load_css():
         border-radius: 12px !important;
         border: 1px solid #333 !important;
         padding: 10px 15px !important;
-    }}
-    
-    /* Placeholder text color */
-    .stTextInput input::placeholder, 
-    .stTextArea textarea::placeholder {{
-        color: #aaa !important;
-        opacity: 1 !important;
     }}
     
     /* Proposal container */
@@ -85,12 +72,19 @@ def load_css():
         border-left: 5px solid {ACCENT_COLOR};
     }}
     
-    /* Tips styling */
+    /* Tips styling - Updated for 4 tips in grid */
     .tips-container {{
-        background: #2a2342;  /* Dark lavender */
+        background: #2a2342;
         border-radius: 15px;
         padding: 1.5rem;
         border-left: 5px solid {ACCENT_COLOR};
+    }}
+    
+    .tip-card {{
+        background: {CARD_BG};
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 0.5rem;
     }}
     
     /* Footer styling */
@@ -98,19 +92,11 @@ def load_css():
         text-align: center;
         margin-top: 3rem;
         color: #aaa;
-        font-size: 0.9rem;
     }}
     
     /* Text colors */
     h1, h2, h3, h4, h5, h6, p, div {{
         color: {TEXT_COLOR} !important;
-    }}
-    
-    /* Select dropdowns */
-    .stSelectbox>div>div>select {{
-        background-color: {CARD_BG} !important;
-        color: {TEXT_COLOR} !important;
-        border: 1px solid #333 !important;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -119,18 +105,13 @@ def load_css():
 def load_logo(width=120):
     try:
         response = requests.get(LOGO_URL, timeout=5)
-        logo = Image.open(BytesIO(response.content))
-        st.image(logo, width=width)
+        if response.status_code == 200:
+            logo = Image.open(BytesIO(response.content))
+            st.image(logo, width=width)
+            return True
     except:
-        st.markdown(f"""
-        <div style="text-align:center; margin-bottom:1rem;">
-            <svg width="{width}" height="{width}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="{ACCENT_COLOR}" stroke-width="2"/>
-                <path d="M2 17L12 22L22 17" stroke="{ACCENT_COLOR}" stroke-width="2"/>
-                <path d="M2 12L12 17L22 12" stroke="{ACCENT_COLOR}" stroke-width="2"/>
-            </svg>
-        </div>
-        """, unsafe_allow_html=True)
+        pass
+    return False
 
 def query_hf_model(prompt):
     payload = {
@@ -192,18 +173,19 @@ def main():
     
     load_css()
     
-    # Header Section
-    st.markdown(f"""
-    <div class="header">
-        <div style="display:flex; align-items:center; justify-content:center; gap:1rem; margin-bottom:1rem;">
-            {load_logo(width=80)}
+    # Header Section - Fixed the None issue
+    header_col1, header_col2 = st.columns([1, 3])
+    with header_col1:
+        logo_loaded = load_logo(width=80)
+    with header_col2:
+        st.markdown("""
+        <div class="header">
             <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
+            <p style="text-align:center; margin:0; font-size:1.1rem; opacity:0.9;">
+            Craft proposals that win projects
+            </p>
         </div>
-        <p style="text-align:center; margin:0; font-size:1.1rem; opacity:0.9;">
-        Craft proposals that win projects
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     # Job Description Card
     with st.expander("📋 Job Details", expanded=True):
@@ -301,23 +283,27 @@ Structure with:
                         use_container_width=True
                     )
     
-    # Tips Section
+    # Tips Section - Now with 4 balanced tips
     st.markdown("---")
     with st.expander("💡 Proposal Writing Tips", expanded=True):
-        st.markdown("""
+        st.markdown(f"""
         <div class="tips-container">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1rem;">
-                <div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <div class="tip-card">
                     <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">✨ Be Personal</h4>
                     <p style="margin:0;">Show you understand their specific needs</p>
                 </div>
-                <div>
+                <div class="tip-card">
                     <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">📈 Show Results</h4>
-                    <p style="margin:0;">"Increased conversions by 30%"</p>
+                    <p style="margin:0;">Use quantifiable achievements</p>
                 </div>
-                <div>
+                <div class="tip-card">
                     <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">⏱️ Create Urgency</h4>
-                    <p style="margin:0;">"I can start immediately"</p>
+                    <p style="margin:0;">Mention your availability</p>
+                </div>
+                <div class="tip-card">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">🔍 Be Specific</h4>
+                    <p style="margin:0;">Detail your technical approach</p>
                 </div>
             </div>
         </div>
