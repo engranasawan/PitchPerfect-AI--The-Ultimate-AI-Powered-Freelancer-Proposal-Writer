@@ -5,10 +5,16 @@ import docx
 import re
 from PIL import Image
 
-# === Custom CSS for Soothing UI ===
+
 def local_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    try:
+        with open(file_name) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        # Fallback to GitHub raw content if local file not found
+        github_css_url = "https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/master/styles.css"
+        css_content = requests.get(github_css_url).text
+        st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
 # === Hugging Face API Setup ===
 API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
