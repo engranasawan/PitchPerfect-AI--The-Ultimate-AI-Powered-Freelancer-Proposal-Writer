@@ -5,9 +5,7 @@ import docx
 import os
 
 # === Hugging Face API Setup ===
-API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf"
-
-
+API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}", "Content-Type": "application/json"}
 
 def query_hf_model(prompt):
