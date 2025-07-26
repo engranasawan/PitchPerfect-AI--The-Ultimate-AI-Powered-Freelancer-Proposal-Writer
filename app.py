@@ -8,10 +8,14 @@ API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}", "Content-Type": "application/json"}
 
 
-def query_hf_model(prompt, max_tokens=400, temperature=0.3):
+def query_hf_model(prompt, max_tokens=600, temperature=0.3):
     payload = {
         "inputs": prompt,
-        "parameters": {"max_new_tokens": max_tokens, "temperature": temperature}
+        "parameters": {
+            "max_new_tokens": max_tokens,
+            "temperature": temperature,
+            "stop": ["###"]
+        }
     }
     response = requests.post(API_URL, headers=headers, json=payload)
     try:
@@ -70,29 +74,48 @@ if st.button("🚀 Generate Proposal"):
         st.warning("Please provide a job description.")
     else:
         with st.spinner("Crafting your winning proposal..."):
-            # Enhanced prompt template
             prompt = f"""
-You are an expert freelance proposal writer. Given the following job description and freelancer profile, generate a compelling proposal with these sections:
-1. Personalized Greeting
-2. Executive Summary (highlight your fit)
-3. Proposed Approach (3-5 bullet points)
-4. Key Deliverables & Timeline
-5. Why Me? (unique value, results)
-6. Call to Action
+### INSTRUCTIONS ###
+You are a professional freelance proposal writer. Your task is to generate a client-ready, highly structured proposal in Markdown with proper section headers, bullet points, and clean formatting. Follow this structure:
 
-Job Description:
+## Dear [Client Name or Hiring Manager],
+
+## Executive Summary
+A brief overview that aligns the freelancer's experience with the job.
+
+## Proposed Approach
+- Step-by-step plan to solve the client problem
+- Mention tools/techniques to be used
+- Show adaptability for collaboration
+
+## Deliverables & Timeline
+| Week | Deliverable |
+|------|-------------|
+| 1–2  | Data Analysis & Preprocessing |
+| 3–5  | Model Development |
+| 6–8  | Evaluation & Optimization |
+| 9–10 | Deployment & Final Review |
+
+## Why Me?
+Showcase the freelancer's unique value, results, and domain experience.
+
+## Call to Action
+Encourage the client to reach out.
+
+### JOB DESCRIPTION ###
 {job_desc}
 
-Freelancer Profile:
+### FREELANCER PROFILE ###
 Name: {name}
 Title: {title}
-Skills: {skills}
 Experience: {experience}
+Skills: {skills}
 Tone: {tone}
-Target Word Count: {length}
+Word Count: {length}
+###
 """
-            proposal = query_hf_model(prompt, max_tokens=int(length*1.5/0.75), temperature=0.25)
+            proposal = query_hf_model(prompt, max_tokens=int(length * 1.4 / 0.75), temperature=0.3)
         if proposal:
-            st.subheader("📬 Your Proposal")
-            st.text_area("Proposal", proposal, height=400)
-            st.download_button("📥 Download Proposal", proposal, file_name="proposal.txt")
+            st.subheader("📬 Your Optimized Proposal")
+            st.text_area("Proposal", proposal.strip(), height=400)
+            st.download_button("📥 Download Proposal", proposal, file_name="proposal.md")
