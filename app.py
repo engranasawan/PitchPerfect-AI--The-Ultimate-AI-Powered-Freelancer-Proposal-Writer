@@ -7,12 +7,11 @@ from PIL import Image
 from io import BytesIO
 import time
 
-# ========== COLOR CONSTANTS ==========
-PRIMARY_COLOR = "#9678d3"  # Light lavender
-SECONDARY_COLOR = "#d9c9f9"  # Very light lavender
-BACKGROUND_COLOR = "#f5f1ff"  # Subtle lavender tint
-TEXT_COLOR = "#333333"
-ACCENT_COLOR = "#7e57c2"  # Slightly deeper lavender
+# ========== CONSTANTS ==========
+API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
+LOGO_URL = "https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/master/logo.png"
+GRADIENT = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+ACCENT_COLOR = "#764ba2"
 
 # ========== CUSTOM CSS ==========
 def load_css():
@@ -20,17 +19,17 @@ def load_css():
     <style>
     /* Main styling */
     .stApp {{
-        background-color: {BACKGROUND_COLOR};
+        background-color: #f8f9fa;
     }}
     
     /* Header styling */
     .header {{
-        background: {PRIMARY_COLOR};
+        background: {GRADIENT};
         padding: 2rem;
         border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         color: white;
         margin-bottom: 2rem;
-        text-align: center;
     }}
     
     /* Card styling */
@@ -38,30 +37,49 @@ def load_css():
         background: white;
         border-radius: 15px;
         padding: 1.5rem;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
         margin-bottom: 1.5rem;
-        border: 1px solid {SECONDARY_COLOR};
+        border: none;
     }}
     
     /* Button styling */
     .stButton>button {{
-        background: {PRIMARY_COLOR};
+        background: {GRADIENT};
         color: white;
         border: none;
         border-radius: 12px;
         padding: 12px 24px;
         font-weight: 600;
+        transition: all 0.3s;
     }}
     
     .stButton>button:hover {{
-        background: {ACCENT_COLOR} !important;
-        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
     }}
     
-    /* Input fields */
-    .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
+    /* Input fields - FIXED THE BLACK BOX ISSUE */
+    .stTextInput>div>div>input, 
+    .stTextArea>div>div>textarea {{
+        background-color: white !important;
+        color: #333333 !important;
         border-radius: 12px !important;
-        border: 1px solid {SECONDARY_COLOR} !important;
+        border: 1px solid #e0e0e0 !important;
         padding: 10px 15px !important;
+    }}
+    
+    /* Input field text color */
+    .stTextInput input, 
+    .stTextArea textarea {{
+        color: #333333 !important;
+    }}
+    
+    /* Expander styling */
+    .stExpander {{
+        border: none !important;
+        background: white !important;
+        border-radius: 15px !important;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
     }}
     
     /* Proposal container */
@@ -69,15 +87,16 @@ def load_css():
         background: white;
         border-radius: 15px;
         padding: 2rem;
-        border-left: 5px solid {PRIMARY_COLOR};
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+        border-left: 5px solid {ACCENT_COLOR};
     }}
     
     /* Tips styling */
     .tips-container {{
-        background: {SECONDARY_COLOR};
+        background: #f9f5ff;
         border-radius: 15px;
         padding: 1.5rem;
-        color: {TEXT_COLOR};
+        border-left: 5px solid {ACCENT_COLOR};
     }}
     
     /* Footer styling */
@@ -87,16 +106,26 @@ def load_css():
         color: #6c757d;
         font-size: 0.9rem;
     }}
-    
-    /* Section headers */
-    .section-header {{
-        color: {PRIMARY_COLOR} !important;
-        margin-bottom: 1rem !important;
-    }}
     </style>
     """, unsafe_allow_html=True)
 
 # ========== HELPER FUNCTIONS ==========
+def load_logo(width=120):
+    try:
+        response = requests.get(LOGO_URL, timeout=5)
+        logo = Image.open(BytesIO(response.content))
+        st.image(logo, width=width)
+    except:
+        st.markdown(f"""
+        <div style="text-align:center; margin-bottom:1rem;">
+            <svg width="{width}" height="{width}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="{ACCENT_COLOR}" stroke-width="2"/>
+                <path d="M2 17L12 22L22 17" stroke="{ACCENT_COLOR}" stroke-width="2"/>
+                <path d="M2 12L12 17L22 12" stroke="{ACCENT_COLOR}" stroke-width="2"/>
+            </svg>
+        </div>
+        """, unsafe_allow_html=True)
+
 def query_hf_model(prompt):
     payload = {
         "inputs": prompt,
@@ -111,7 +140,7 @@ def query_hf_model(prompt):
     
     try:
         response = requests.post(
-            "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct",
+            API_URL,
             headers={"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"},
             json=payload,
             timeout=60
@@ -150,7 +179,7 @@ def extract_text_from_file(uploaded_file):
 def main():
     st.set_page_config(
         page_title="PitchPerfect AI",
-        page_icon="✍️",
+        page_icon="💎",
         layout="centered",
         initial_sidebar_state="collapsed"
     )
@@ -160,16 +189,23 @@ def main():
     # Header Section
     st.markdown(f"""
     <div class="header">
-        <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
-        <p style="margin:0; font-size:1.1rem; opacity:0.9;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:1rem; margin-bottom:1rem;">
+            {load_logo(width=80)}
+            <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
+        </div>
+        <p style="text-align:center; margin:0; font-size:1.1rem; opacity:0.9;">
         Craft proposals that win projects
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Job Description Section
+    # Job Description Card
     with st.container():
-        st.markdown(f'<h3 class="section-header">📋 Job Details</h3>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+            <h3 style="margin:0; color:#333;">📋 Job Details</h3>
+        </div>
+        """, unsafe_allow_html=True)
         
         uploaded_file = st.file_uploader(
             "Upload job description (PDF/DOCX/TXT)", 
@@ -184,9 +220,13 @@ def main():
             label_visibility="collapsed"
         )
     
-    # Freelancer Profile Section
+    # Freelancer Profile Card
     with st.container():
-        st.markdown(f'<h3 class="section-header">👤 Your Profile</h3>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+            <h3 style="margin:0; color:#333;">👤 Your Profile</h3>
+        </div>
+        """, unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
         with col1:
@@ -270,21 +310,21 @@ Structure with:
     # Tips Section
     st.markdown("---")
     with st.container():
-        st.markdown(f'<h3 class="section-header">💡 Proposal Writing Tips</h3>', unsafe_allow_html=True)
-        st.markdown(f"""
+        st.markdown("""
         <div class="tips-container">
+            <h3 style="margin-top:0; color:#333;">💡 Proposal Writing Tips</h3>
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1rem;">
-                <div>
-                    <h4 style="margin:0 0 0.5rem 0; color:{PRIMARY_COLOR};">✨ Be Personal</h4>
+                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">✨ Be Personal</h4>
                     <p style="margin:0;">Show you understand their specific needs and challenges</p>
                 </div>
-                <div>
-                    <h4 style="margin:0 0 0.5rem 0; color:{PRIMARY_COLOR};">📈 Show Results</h4>
-                    <p style="margin:0;">Use quantifiable achievements like "Increased conversions by 30%"</p>
+                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">📈 Show Results</h4>
+                    <p style="margin:0;">"Increased conversions by 30%" beats "Worked on conversions"</p>
                 </div>
-                <div>
-                    <h4 style="margin:0 0 0.5rem 0; color:{PRIMARY_COLOR};">⏱️ Create Urgency</h4>
-                    <p style="margin:0;">Mention your availability and quick turnaround time</p>
+                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">⏱️ Create Urgency</h4>
+                    <p style="margin:0;">"I can start immediately and deliver in 2 weeks"</p>
                 </div>
             </div>
         </div>
@@ -293,7 +333,7 @@ Structure with:
     # Footer
     st.markdown("""
     <div class="footer">
-        <p>PitchPerfect AI - Helping freelancers win more projects</p>
+        <p>💎 PitchPerfect AI - Helping freelancers win more projects</p>
     </div>
     """, unsafe_allow_html=True)
 
