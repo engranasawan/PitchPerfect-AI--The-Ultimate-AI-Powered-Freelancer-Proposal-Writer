@@ -5,7 +5,8 @@ import docx
 import os
 
 # === Hugging Face API Setup ===
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
+
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}", "Content-Type": "application/json"}
 
 def query_hf_model(prompt):
