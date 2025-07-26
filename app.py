@@ -9,7 +9,7 @@ import time
 
 # ========== CONSTANTS ==========
 API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
-LOGO_URL = "https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/master/logo.png"
+LOGO_URL = f"https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/master/logo.png?{int(time.time())}"
 GRADIENT = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
 DARK_BG = "#121212"
 CARD_BG = "#1e1e1e"
@@ -72,7 +72,7 @@ def load_css():
         border-left: 5px solid {ACCENT_COLOR};
     }}
     
-    /* Tips styling - Updated for 4 tips in grid */
+    /* Tips styling */
     .tips-container {{
         background: #2a2342;
         border-radius: 15px;
@@ -104,22 +104,15 @@ def load_css():
 # ========== HELPER FUNCTIONS ==========
 def load_logo(width=120):
     try:
-        response = requests.get(LOGO_URL, timeout=5)
+        # Add cache-busting query parameter
+        logo_url = f"{LOGO_URL.split('?')[0]}?{int(time.time())}"
+        response = requests.get(logo_url, timeout=5)
         if response.status_code == 200:
             logo = Image.open(BytesIO(response.content))
-            col1, col2 = st.columns([1, 3])
-            with col1:
-                st.image(logo, width=width)
-            with col2:
-                st.markdown("""
-                <div style="display:flex; align-items:center; height:100%;">
-                    <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
-                </div>
-                """, unsafe_allow_html=True)
-            return True
+            return logo
     except Exception as e:
         st.error(f"Error loading logo: {str(e)}")
-    return False
+    return None
 
 def query_hf_model(prompt):
     payload = {
@@ -181,11 +174,13 @@ def main():
     
     load_css()
     
-    # Header Section with new logo
+    # Header Section with logo
+    logo = load_logo(width=80)
     st.markdown(f"""
     <div class="header">
-        <div style="display:flex; justify-content:center;">
-            {"<img src='" + LOGO_URL + "' width='80' style='margin-right:1rem;'/>" if load_logo() else ""}
+        <div style="display:flex; justify-content:center; align-items:center; gap:1rem;">
+            {"<img src='" + LOGO_URL + f"?{int(time.time())}" + "' width='80' style='margin-right:1rem;'/>" if logo else ""}
+            <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
         </div>
         <p style="text-align:center; margin:10px 0 0; font-size:1.1rem; opacity:0.9;">
         Craft proposals that win projects
