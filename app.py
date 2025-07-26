@@ -107,10 +107,18 @@ def load_logo(width=120):
         response = requests.get(LOGO_URL, timeout=5)
         if response.status_code == 200:
             logo = Image.open(BytesIO(response.content))
-            st.image(logo, width=width)
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.image(logo, width=width)
+            with col2:
+                st.markdown("""
+                <div style="display:flex; align-items:center; height:100%;">
+                    <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
+                </div>
+                """, unsafe_allow_html=True)
             return True
-    except:
-        pass
+    except Exception as e:
+        st.error(f"Error loading logo: {str(e)}")
     return False
 
 def query_hf_model(prompt):
@@ -173,19 +181,17 @@ def main():
     
     load_css()
     
-    # Header Section - Fixed the None issue
-    header_col1, header_col2 = st.columns([1, 3])
-    with header_col1:
-        logo_loaded = load_logo(width=80)
-    with header_col2:
-        st.markdown("""
-        <div class="header">
-            <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
-            <p style="text-align:center; margin:0; font-size:1.1rem; opacity:0.9;">
-            Craft proposals that win projects
-            </p>
+    # Header Section with new logo
+    st.markdown(f"""
+    <div class="header">
+        <div style="display:flex; justify-content:center;">
+            {"<img src='" + LOGO_URL + "' width='80' style='margin-right:1rem;'/>" if load_logo() else ""}
         </div>
-        """, unsafe_allow_html=True)
+        <p style="text-align:center; margin:10px 0 0; font-size:1.1rem; opacity:0.9;">
+        Craft proposals that win projects
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Job Description Card
     with st.expander("📋 Job Details", expanded=True):
@@ -283,7 +289,7 @@ Structure with:
                         use_container_width=True
                     )
     
-    # Tips Section - Now with 4 balanced tips
+    # Tips Section - 4 balanced tips
     st.markdown("---")
     with st.expander("💡 Proposal Writing Tips", expanded=True):
         st.markdown(f"""
