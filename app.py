@@ -9,49 +9,115 @@ import time
 
 # ========== CONSTANTS ==========
 API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
-CSS_URL = "https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/master/styles.css"
-LOGO_URL = "https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/main/logo.png"
-FALLBACK_LOGO = "https://i.imgur.com/JQ9w0Vr.png"
+LOGO_URL = "https://drive.google.com/file/d/1vCagzDUHzFIeIpXbhtfmlLO9Uai8eY5D/view?usp=drive_link"  # Modern abstract logo
+GRADIENT = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+ACCENT_COLOR = "#764ba2"
+
+# ========== CUSTOM CSS ==========
+def load_css():
+    st.markdown(f"""
+    <style>
+    /* Main styling */
+    .stApp {{
+        background-color: #f8f9fa;
+    }}
+    
+    /* Header styling */
+    .header {{
+        background: {GRADIENT};
+        padding: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        color: white;
+        margin-bottom: 2rem;
+    }}
+    
+    /* Card styling */
+    .card {{
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+        border: none;
+    }}
+    
+    /* Button styling */
+    .stButton>button {{
+        background: {GRADIENT};
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }}
+    
+    .stButton>button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+    }}
+    
+    /* Input fields */
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
+        border-radius: 12px !important;
+        border: 1px solid #e0e0e0 !important;
+        padding: 10px 15px !important;
+    }}
+    
+    /* Expander styling */
+    .stExpander {{
+        border: none !important;
+        background: white !important;
+        border-radius: 15px !important;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
+    }}
+    
+    /* Proposal container */
+    .proposal-container {{
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+        border-left: 5px solid {ACCENT_COLOR};
+    }}
+    
+    /* Tips styling */
+    .tips-container {{
+        background: #f9f5ff;
+        border-radius: 15px;
+        padding: 1.5rem;
+        border-left: 5px solid {ACCENT_COLOR};
+    }}
+    
+    /* Footer styling */
+    .footer {{
+        text-align: center;
+        margin-top: 3rem;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 # ========== HELPER FUNCTIONS ==========
-def load_css():
-    """Load CSS from GitHub with local fallback"""
-    try:
-        # Try GitHub first
-        response = requests.get(CSS_URL, timeout=5)
-        if response.status_code == 200:
-            st.markdown(f"<style>{response.text}</style>", unsafe_allow_html=True)
-            return
-    except:
-        pass
-    
-    # Local fallback
-    try:
-        with open("styles.css") as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    except:
-        st.warning("Couldn't load custom styles")
-
-def load_logo(width=150):
-    """Load logo with multiple fallback options"""
+def load_logo(width=120):
     try:
         response = requests.get(LOGO_URL, timeout=5)
-        if response.status_code == 200:
-            logo = Image.open(BytesIO(response.content))
-            st.image(logo, width=width)
-            return True
+        logo = Image.open(BytesIO(response.content))
+        st.image(logo, width=width)
     except:
-        pass
-    
-    try:
-        st.image(FALLBACK_LOGO, width=width)
-        return True
-    except:
-        st.markdown("<h1 style='text-align:center;'>PitchPerfect AI</h1>", unsafe_allow_html=True)
-        return False
+        st.markdown(f"""
+        <div style="text-align:center; margin-bottom:1rem;">
+            <svg width="{width}" height="{width}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="{ACCENT_COLOR}" stroke-width="2"/>
+                <path d="M2 17L12 22L22 17" stroke="{ACCENT_COLOR}" stroke-width="2"/>
+                <path d="M2 12L12 17L22 12" stroke="{ACCENT_COLOR}" stroke-width="2"/>
+            </svg>
+        </div>
+        """, unsafe_allow_html=True)
 
 def query_hf_model(prompt):
-    """Query Hugging Face model with robust error handling"""
     payload = {
         "inputs": prompt,
         "parameters": {
@@ -64,47 +130,25 @@ def query_hf_model(prompt):
     }
     
     try:
-        start_time = time.time()
-        with st.spinner("Generating proposal..."):
-            response = requests.post(
-                API_URL,
-                headers={"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"},
-                json=payload,
-                timeout=60
-            )
-        
-        if response.status_code == 503:  # Model loading
-            raise Exception("Model is loading, please try again in 30-60 seconds")
-        
+        response = requests.post(
+            API_URL,
+            headers={"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"},
+            json=payload,
+            timeout=60
+        )
         response.raise_for_status()
         result = response.json()
-        
-        if isinstance(result, list):
-            return clean_proposal_output(result[0].get("generated_text", ""))
-        return clean_proposal_output(result.get("generated_text", ""))
-    
-    except requests.exceptions.RequestException as e:
-        st.error(f"API request failed: {str(e)}")
-        return ""
+        return clean_proposal_output(result[0].get("generated_text", "")) if isinstance(result, list) else ""
     except Exception as e:
-        st.error(f"Generation error: {str(e)}")
+        st.error(f"Error generating proposal: {str(e)}")
         return ""
 
 def clean_proposal_output(text):
-    """Clean and format the proposal output"""
-    if not text:
-        return ""
-    
-    # Remove prompt leakage
     text = re.sub(r'^.*?(?=Subject:|\nDear|Proposal:)', '', text, flags=re.DOTALL)
-    # Remove meta comments
     text = re.sub(r'(Please note:|Let me know if).*$', '', text, flags=re.DOTALL)
-    # Normalize whitespace
-    text = re.sub(r'\n\s*\n', '\n\n', text.strip())
-    return text
+    return re.sub(r'\n\s*\n', '\n\n', text.strip())
 
 def extract_text_from_file(uploaded_file):
-    """Extract text from PDF, DOCX, or TXT files"""
     if not uploaded_file:
         return ""
     
@@ -124,31 +168,40 @@ def extract_text_from_file(uploaded_file):
 
 # ========== STREAMLIT UI ==========
 def main():
-    # Configure page
     st.set_page_config(
         page_title="PitchPerfect AI",
-        page_icon="✍️",
+        page_icon="💎",
         layout="centered",
         initial_sidebar_state="collapsed"
     )
     
-    # Load styling
     load_css()
     
     # Header Section
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        load_logo(width=100)
-    with col2:
-        st.markdown("<h1 style='margin-bottom:0;color:#4a8fe7'>PitchPerfect AI</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='margin-top:0;color:#a1c4fd'>Ultimate Proposal Writer</p>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="header">
+        <div style="display:flex; align-items:center; justify-content:center; gap:1rem; margin-bottom:1rem;">
+            {load_logo(width=80)}
+            <h1 style="margin:0; color:white;">PitchPerfect AI</h1>
+        </div>
+        <p style="text-align:center; margin:0; font-size:1.1rem; opacity:0.9;">
+        Craft proposals that win projects
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Job Description Section
-    with st.expander("📄 STEP 1: Job Details", expanded=True):
+    # Job Description Card
+    with st.container():
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+            <h3 style="margin:0; color:#333;">📋 Job Details</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         uploaded_file = st.file_uploader(
             "Upload job description (PDF/DOCX/TXT)", 
             type=["pdf", "docx", "txt"],
-            help="Supported formats: PDF, Word, or plain text"
+            label_visibility="collapsed"
         )
         job_desc = st.text_area(
             "Or paste job description here",
@@ -158,36 +211,27 @@ def main():
             label_visibility="collapsed"
         )
     
-    # Freelancer Profile Section
-    with st.expander("👤 STEP 2: Your Profile", expanded=True):
+    # Freelancer Profile Card
+    with st.container():
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+            <h3 style="margin:0; color:#333;">👤 Your Profile</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         col1, col2 = st.columns(2)
         with col1:
             name = st.text_input("Full Name", placeholder="Your full name")
             email = st.text_input("Email", placeholder="professional@email.com")
-            tone = st.selectbox(
-                "Proposal Tone", 
-                ["Professional", "Persuasive", "Friendly", "Technical"],
-                help="Select the tone that matches your personal brand"
-            )
+            tone = st.selectbox("Proposal Tone", ["Professional", "Persuasive", "Friendly", "Technical"])
         with col2:
             title = st.text_input("Professional Title", placeholder="e.g. AI/ML Engineer")
             linkedin = st.text_input("LinkedIn Profile", placeholder="linkedin.com/in/yourprofile")
             urgency = st.selectbox("Availability", ["Immediately", "Within 48 hours", "Next week"])
         
-        skills = st.text_input(
-            "Key Skills (comma separated)", 
-            placeholder="Python, Deep Learning, Data Analysis"
-        )
-        experience = st.text_area(
-            "Professional Experience", 
-            placeholder="Brief summary of your relevant experience", 
-            height=80
-        )
-        achievements = st.text_area(
-            "Key Achievements", 
-            placeholder="Quantifiable results from past projects (e.g., 'Increased conversion by 30%')", 
-            height=80
-        )
+        skills = st.text_input("Key Skills (comma separated)", placeholder="Python, Deep Learning, Data Analysis")
+        experience = st.text_area("Professional Experience", placeholder="Brief summary of your relevant experience", height=80)
+        achievements = st.text_area("Key Achievements", placeholder="Quantifiable results from past projects", height=80)
     
     # Generate Button
     if st.button("✨ Generate My Proposal", type="primary", use_container_width=True):
@@ -196,7 +240,7 @@ def main():
         elif not name.strip():
             st.warning("Please enter your name")
         else:
-            with st.spinner("Crafting your perfect proposal..."):
+            with st.spinner("✨ Crafting your perfect proposal..."):
                 prompt = f"""Create a {tone.lower()} proposal for this job:
 
 **Job Description:**
@@ -224,8 +268,12 @@ Structure with:
             
             if proposal:
                 st.success("✅ Proposal Generated!")
-                with st.container(border=True):
-                    st.subheader("📝 Your Proposal")
+                with st.container():
+                    st.markdown("""
+                    <div class="proposal-container">
+                        <h3 style="color:#333; margin-top:0;">📝 Your Proposal</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.text_area(
                         "Proposal Content", 
                         proposal, 
@@ -239,38 +287,46 @@ Structure with:
                     st.download_button(
                         "📥 Download as TXT",
                         proposal,
-                        file_name=f"proposal_{name.replace(' ', '_')}.txt"
+                        file_name=f"proposal_{name.replace(' ', '_')}.txt",
+                        use_container_width=True
                     )
                 with col2:
                     st.download_button(
                         "📄 Download as DOCX",
                         proposal,
-                        file_name=f"proposal_{name.replace(' ', '_')}.docx"
+                        file_name=f"proposal_{name.replace(' ', '_')}.docx",
+                        use_container_width=True
                     )
-            else:
-                st.error("Failed to generate proposal. Please try again.")
     
     # Tips Section
     st.markdown("---")
-    with st.expander("💡 Proposal Writing Tips", expanded=True):
+    with st.container():
         st.markdown("""
-        <div style='background-color:#1a3a4e;padding:1rem;border-radius:8px;border-left:4px solid #3a5a78'>
-        ✨ **Make it personal** - Show you understand their specific needs  
-        🌟 **Highlight results** - "Increased conversions by 30%" beats "Worked on conversions"  
-        🔍 **Be specific** - "I'll use TensorFlow with LSTM layers" vs "I know AI"  
-        ⏱️ **Show urgency** - "I can start immediately and deliver in 2 weeks"  
-        📞 **Clear CTA** - "Let's schedule a call Tuesday to discuss details"  
+        <div class="tips-container">
+            <h3 style="margin-top:0; color:#333;">💡 Proposal Writing Tips</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1rem;">
+                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">✨ Be Personal</h4>
+                    <p style="margin:0;">Show you understand their specific needs and challenges</p>
+                </div>
+                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">📈 Show Results</h4>
+                    <p style="margin:0;">"Increased conversions by 30%" beats "Worked on conversions"</p>
+                </div>
+                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">⏱️ Create Urgency</h4>
+                    <p style="margin:0;">"I can start immediately and deliver in 2 weeks"</p>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
     # Footer
-    st.markdown("---")
-    st.markdown(
-        "<div style='text-align:center;color:#7F7F7F;margin-top:1rem'>"
-        "🌿 PitchPerfect AI - Helping freelancers win more projects"
-        "</div>", 
-        unsafe_allow_html=True
-    )
+    st.markdown("""
+    <div class="footer">
+        <p>💎 PitchPerfect AI - Helping freelancers win more projects</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
