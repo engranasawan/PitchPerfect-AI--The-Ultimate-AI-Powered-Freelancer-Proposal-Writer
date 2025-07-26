@@ -1,38 +1,32 @@
-import os
 import streamlit as st
 import requests
-import fitz  # PyMuPDF for PDF parsing
-import docx  # For DOCX parsing
+import fitz  # PyMuPDF
+import docx
+import os
 
-# === CONFIG ===
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
-HF_TOKEN = st.secrets.get("HF_TOKEN", os.getenv("HF_TOKEN"))
-HEADERS = {
-    "Authorization": f"Bearer {HF_TOKEN}",
-    "Content-Type": "application/json"
-}
+# === Hugging Face API Setup ===
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}", "Content-Type": "application/json"}
 
-# === HELPER FUNCTIONS ===
-def query_hf_model(prompt: str):
+def query_hf_model(prompt):
     payload = {
         "inputs": prompt,
         "parameters": {"max_new_tokens": 300, "temperature": 0.7}
     }
+    response = requests.post(API_URL, headers=headers, json=payload)
+
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload)
         response.raise_for_status()
-        json_data = response.json()
-        if isinstance(json_data, list) and "generated_text" in json_data[0]:
-            return json_data[0]["generated_text"]
-        elif isinstance(json_data, dict) and "error" in json_data:
-            return f"API Error: {json_data['error']}"
-        return str(json_data)
-    except requests.exceptions.RequestException as e:
-        st.error("⚠️ API Request failed.")
-        st.exception(e)
-        return ""
-    except requests.exceptions.JSONDecodeError:
-        st.error("⚠️ Invalid JSON response from Hugging Face.")
+        result = response.json()
+        if isinstance(result, list):
+            return result[0].get("generated_text", "❌ No proposal generated.")
+        elif isinstance(result, dict) and "error" in result:
+            st.error(f"❌ Hugging Face Error: {result['error']}")
+            return ""
+        return result
+    except Exception as e:
+        st.error(f"❌ API Error: {e}")
+        st.code(response.text, language="text")
         return ""
 
 def extract_text_from_file(uploaded_file):
@@ -45,18 +39,18 @@ def extract_text_from_file(uploaded_file):
         return "\n".join([p.text for p in doc.paragraphs])
     elif ext == "txt":
         return uploaded_file.read().decode("utf-8")
-    else:
-        return ""
+    return ""
 
-# === STREAMLIT UI ===
-st.set_page_config(page_title="PitchPerfect AI", layout="centered")
-st.title("📝 PitchPerfect AI – Ultimate Proposal Writer for Freelancers")
+# === Streamlit UI ===
+st.set_page_config(page_title="Freelancer Proposal Writer", layout="centered")
+st.title("📝 PitchPerfect AI — Ultimate Proposal Writer for Freelancers")
 
 # --- Job Description Input ---
 st.subheader("📄 Job Description")
 uploaded_file = st.file_uploader("Upload a job description file (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
 job_desc = extract_text_from_file(uploaded_file) if uploaded_file else ""
-job_desc = st.text_area("Or paste the job description here", value=job_desc, height=200, help="This will be used to tailor your proposal.")
+
+job_desc = st.text_area("Or paste the job description here", value=job_desc, height=200)
 
 # --- Freelancer Info ---
 st.subheader("👤 Your Profile")
@@ -66,26 +60,27 @@ skills = st.text_area("Key Skills (comma-separated)", "Python, Deep Learning, NL
 experience = st.text_area("Brief Experience Summary", "I have 3+ years of experience delivering production-ready AI systems.")
 tone = st.selectbox("🎯 Tone of Proposal", ["Professional", "Friendly", "Confident", "Creative"])
 
-# --- Generate Proposal ---
+# --- Generate Button ---
 if st.button("🚀 Generate Proposal"):
     if not job_desc.strip():
         st.warning("Please provide a job description.")
     else:
         with st.spinner("Generating proposal..."):
             prompt = f"""
-Write a freelance proposal for the following job post:
+You are a highly experienced freelance proposal writer.
+
+Write a compelling freelance proposal in a {tone.lower()} tone for the following job:
 
 Job Description:
 {job_desc}
 
-Freelancer Details:
+Freelancer Profile:
 Name: {name}
 Title: {title}
 Skills: {skills}
 Experience: {experience}
-Tone: {tone}
 
-Make it persuasive, clear, and aligned with the tone.
+Make it persuasive, clear, and tailored to the client’s needs.
 """
             proposal = query_hf_model(prompt)
 
