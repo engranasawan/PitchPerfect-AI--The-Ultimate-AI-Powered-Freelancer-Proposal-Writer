@@ -69,12 +69,12 @@ def extract_text_from_file(uploaded_file):
 
 # === Streamlit UI ===
 st.set_page_config(
-    page_title="🚀 PitchPerfect AI Pro",
+    page_title="PitchPerfect AI Pro",
     layout="centered",
     page_icon="💼"
 )
 
-st.title("🚀 PitchPerfect AI Pro")
+st.title("PitchPerfect AI Pro")
 st.markdown("### Generate Winning Freelance Proposals")
 
 # --- Job Description Input ---
