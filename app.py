@@ -11,7 +11,10 @@ import time
 API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct"
 LOGO_URL = "https://raw.githubusercontent.com/engranasawan/PitchPerfect-AI--The-Ultimate-AI-Powered-Freelancer-Proposal-Writer/master/logo.png"
 GRADIENT = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-ACCENT_COLOR = "#764ba2"
+DARK_BG = "#121212"
+CARD_BG = "#1e1e1e"
+TEXT_COLOR = "#ffffff"
+ACCENT_COLOR = "#9678d3"  # Lavender accent
 
 # ========== CUSTOM CSS ==========
 def load_css():
@@ -19,7 +22,8 @@ def load_css():
     <style>
     /* Main styling */
     .stApp {{
-        background-color: #f8f9fa;
+        background-color: {DARK_BG};
+        color: {TEXT_COLOR};
     }}
     
     /* Header styling */
@@ -27,73 +31,63 @@ def load_css():
         background: {GRADIENT};
         padding: 2rem;
         border-radius: 0 0 20px 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         color: white;
         margin-bottom: 2rem;
     }}
     
     /* Card styling */
-    .card {{
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-        margin-bottom: 1.5rem;
-        border: none;
+    .card, .stExpander {{
+        background: {CARD_BG} !important;
+        border-radius: 15px !important;
+        padding: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+        border: none !important;
     }}
     
     /* Button styling */
     .stButton>button {{
-        background: {GRADIENT};
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 24px;
-        font-weight: 600;
-        transition: all 0.3s;
+        background: {GRADIENT} !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s !important;
     }}
     
     .stButton>button:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3) !important;
     }}
     
-    /* Input fields - FIXED THE BLACK BOX ISSUE */
+    /* Input fields - Fixed dark mode styling */
     .stTextInput>div>div>input, 
     .stTextArea>div>div>textarea {{
-        background-color: white !important;
-        color: #333333 !important;
+        background-color: {CARD_BG} !important;
+        color: {TEXT_COLOR} !important;
         border-radius: 12px !important;
-        border: 1px solid #e0e0e0 !important;
+        border: 1px solid #333 !important;
         padding: 10px 15px !important;
     }}
     
-    /* Input field text color */
-    .stTextInput input, 
-    .stTextArea textarea {{
-        color: #333333 !important;
-    }}
-    
-    /* Expander styling */
-    .stExpander {{
-        border: none !important;
-        background: white !important;
-        border-radius: 15px !important;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
+    /* Placeholder text color */
+    .stTextInput input::placeholder, 
+    .stTextArea textarea::placeholder {{
+        color: #aaa !important;
+        opacity: 1 !important;
     }}
     
     /* Proposal container */
     .proposal-container {{
-        background: white;
+        background: {CARD_BG};
         border-radius: 15px;
         padding: 2rem;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
         border-left: 5px solid {ACCENT_COLOR};
     }}
     
     /* Tips styling */
     .tips-container {{
-        background: #f9f5ff;
+        background: #2a2342;  /* Dark lavender */
         border-radius: 15px;
         padding: 1.5rem;
         border-left: 5px solid {ACCENT_COLOR};
@@ -103,8 +97,20 @@ def load_css():
     .footer {{
         text-align: center;
         margin-top: 3rem;
-        color: #6c757d;
+        color: #aaa;
         font-size: 0.9rem;
+    }}
+    
+    /* Text colors */
+    h1, h2, h3, h4, h5, h6, p, div {{
+        color: {TEXT_COLOR} !important;
+    }}
+    
+    /* Select dropdowns */
+    .stSelectbox>div>div>select {{
+        background-color: {CARD_BG} !important;
+        color: {TEXT_COLOR} !important;
+        border: 1px solid #333 !important;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -200,13 +206,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Job Description Card
-    with st.container():
-        st.markdown("""
-        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
-            <h3 style="margin:0; color:#333;">📋 Job Details</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
+    with st.expander("📋 Job Details", expanded=True):
         uploaded_file = st.file_uploader(
             "Upload job description (PDF/DOCX/TXT)", 
             type=["pdf", "docx", "txt"],
@@ -221,13 +221,7 @@ def main():
         )
     
     # Freelancer Profile Card
-    with st.container():
-        st.markdown("""
-        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
-            <h3 style="margin:0; color:#333;">👤 Your Profile</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
+    with st.expander("👤 Your Profile", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
             name = st.text_input("Full Name", placeholder="Your full name")
@@ -280,7 +274,7 @@ Structure with:
                 with st.container():
                     st.markdown("""
                     <div class="proposal-container">
-                        <h3 style="color:#333; margin-top:0;">📝 Your Proposal</h3>
+                        <h3 style="margin-top:0;">📝 Your Proposal</h3>
                     </div>
                     """, unsafe_allow_html=True)
                     st.text_area(
@@ -309,22 +303,21 @@ Structure with:
     
     # Tips Section
     st.markdown("---")
-    with st.container():
+    with st.expander("💡 Proposal Writing Tips", expanded=True):
         st.markdown("""
         <div class="tips-container">
-            <h3 style="margin-top:0; color:#333;">💡 Proposal Writing Tips</h3>
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1rem;">
-                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                <div>
                     <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">✨ Be Personal</h4>
-                    <p style="margin:0;">Show you understand their specific needs and challenges</p>
+                    <p style="margin:0;">Show you understand their specific needs</p>
                 </div>
-                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                <div>
                     <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">📈 Show Results</h4>
-                    <p style="margin:0;">"Increased conversions by 30%" beats "Worked on conversions"</p>
+                    <p style="margin:0;">"Increased conversions by 30%"</p>
                 </div>
-                <div style="background:white; padding:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                <div>
                     <h4 style="margin:0 0 0.5rem 0; color:{ACCENT_COLOR};">⏱️ Create Urgency</h4>
-                    <p style="margin:0;">"I can start immediately and deliver in 2 weeks"</p>
+                    <p style="margin:0;">"I can start immediately"</p>
                 </div>
             </div>
         </div>
