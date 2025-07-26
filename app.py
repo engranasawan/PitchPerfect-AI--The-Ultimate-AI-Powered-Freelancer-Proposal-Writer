@@ -9,24 +9,29 @@ API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Inst
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"}
 
 def query_hf_model(prompt):
+    import os
+    import requests
+
+    api_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"  # or whatever model you're using
     headers = {
-        "Authorization": f"Bearer {os.getenv('HF_TOKEN')}"
+        "Authorization": f"Bearer {os.getenv('HF_TOKEN')}",
+        "Content-Type": "application/json"
     }
-    data = {
+    payload = {
         "inputs": prompt,
-        "parameters": {"temperature": 0.7, "max_new_tokens": 512}
+        "parameters": {"max_new_tokens": 300, "temperature": 0.7}
     }
-    response = requests.post(
-        "https://api-inference.huggingface.co/models/google/flan-t5-base",  # example smaller model
-        headers=headers,
-        json=data
-    )
+
+    response = requests.post(api_url, headers=headers, json=payload)
 
     try:
         return response.json()
-    except Exception as e:
-        print("❌ Raw response:", response.text)
-        raise e
+    except requests.exceptions.JSONDecodeError:
+        # Show full error message in Streamlit
+        st.error("❌ Hugging Face API did not return valid JSON.")
+        st.code(response.text, language="text")
+        raise
+
 
 
 def extract_text_from_file(uploaded_file):
